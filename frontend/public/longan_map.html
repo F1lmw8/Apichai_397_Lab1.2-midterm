@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longan Map - อภิไช โฉมทอง</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 0.5rem;
+        }
+
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 font-sans text-slate-900 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-6 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">Longan Survey Map</h1>
+                <p id="user-info" class="text-indigo-100 mt-1">Loading user info...</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Panel: Form -->
+            <div class="lg:col-span-1">
+                <div class="glass p-6 rounded-xl shadow-sm">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Add New Survey Location
+                    </h2>
+
+                    <form id="location-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Place / Province</label>
+                            <input type="text" id="place" required placeholder="e.g. Chiang Mai"
+                                class="mt-1 block w-100 w-full px-4 py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none border">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Price (THB/kg)</label>
+                                <input type="number" id="price" step="0.01" required placeholder="0.00"
+                                    class="mt-1 block w-full px-4 py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none border">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Survey Date</label>
+                                <input type="date" id="date" required
+                                    class="mt-1 block w-full px-4 py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none border">
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-md transform active:scale-95 duration-150">
+                            Add to Map
+                        </button>
+                    </form>
+
+                    <div id="status" class="mt-4 text-sm font-medium hidden"></div>
+
+                    <div class="mt-8">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Survey History</h3>
+                        <ul id="history-list" class="space-y-2 max-h-48 overflow-y-auto">
+                            <!-- History items will be injected here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Map -->
+            <div class="lg:col-span-2 space-y-4">
+                <div id="map" class="shadow-xl ring-1 ring-slate-200"></div>
+
+                <div class="flex items-center space-x-4 text-sm text-slate-500">
+                    <span class="flex items-center">
+                        <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                        Survey Point
+                    </span>
+                    <span class="flex items-center">
+                        <span class="w-3 h-3 bg-indigo-600 rounded-full mr-2"></span>
+                        Current Center
+                    </span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Configuration & State ---
+        const API_BASE_URL = 'http://localhost:3000';
+        const STORAGE_KEY = 'longan_survey_cache';
+        let map, markersLayer;
+        let surveyData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            fetchUserInfo();
+            renderHistory();
+            plotExistingMarkers();
+
+            document.getElementById('location-form').addEventListener('submit', handleFormSubmit);
+            // Set default date to today
+            document.getElementById('date').valueAsDate = new Date();
+        });
+
+        function initMap() {
+            // Focus on Northern Thailand (base on instructions)
+            // Chiang Mai coordinates: 18.7883, 98.9853
+            map = L.map('map').setView([18.7883, 98.9853], 8);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            markersLayer = L.layerGroup().addTo(map);
+        }
+
+        async function fetchUserInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user`);
+                const data = await response.json();
+                document.getElementById('user-info').textContent = `${data.name} (${data.studentId})`;
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                document.getElementById('user-info').textContent = 'Error loading user information';
+            }
+        }
+
+        // --- Logic ---
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const place = document.getElementById('place').value;
+            const price = document.getElementById('price').value;
+            const date = document.getElementById('date').value;
+            const statusDiv = document.getElementById('status');
+
+            statusDiv.textContent = '📍 Geocoding location...';
+            statusDiv.classList.remove('hidden', 'text-red-500', 'text-green-500');
+            statusDiv.classList.add('text-indigo-600');
+
+            try {
+                // Special cases from prompt
+                let lat, lon;
+                const lowerPlace = place.toLowerCase();
+
+                if (lowerPlace.includes('ตลาดสันทราย')) {
+                    lat = 18.8056;
+                    lon = 99.0105;
+                } else if (lowerPlace.includes('เชียงใหม่')) {
+                    lat = 18.7883;
+                    lon = 98.9853;
+                } else {
+                    const coords = await geocode(place);
+                    lat = coords.lat;
+                    lon = coords.lon;
+                }
+
+                const newEntry = {
+                    id: Date.now(),
+                    place,
+                    price,
+                    date,
+                    lat,
+                    lon
+                };
+
+                surveyData.push(newEntry);
+                saveData();
+                addMarker(newEntry);
+                renderHistory();
+                updateMapBounds();
+
+                statusDiv.textContent = '✅ Location added successfully!';
+                statusDiv.classList.replace('text-indigo-600', 'text-green-500');
+                e.target.reset();
+                document.getElementById('date').valueAsDate = new Date();
+
+                setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+
+            } catch (error) {
+                statusDiv.textContent = '❌ ' + error.message;
+                statusDiv.classList.replace('text-indigo-600', 'text-red-500');
+            }
+        }
+
+        async function geocode(query) {
+            // Nominatim API
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+            const response = await fetch(url);
+            const results = await response.json();
+
+            if (results && results.length > 0) {
+                return {
+                    lat: parseFloat(results[0].lat),
+                    lon: parseFloat(results[0].lon)
+                };
+            }
+            throw new Error('Location not found');
+        }
+
+        function addMarker(entry) {
+            // Creating a custom green icon as requested
+            const greenIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            const popupContent = `
+                <div class="font-sans text-sm">
+                    <span class="font-bold text-indigo-700">${entry.place}</span> 
+                    | ราคา <span class="font-semibold text-slate-800">${entry.price}</span> บาท 
+                    | วันที่ <span class="font-semibold text-slate-800">${entry.date}</span>
+                </div>
+            `;
+
+            L.marker([entry.lat, entry.lon], { icon: greenIcon })
+                .addTo(markersLayer)
+                .bindPopup(popupContent);
+        }
+
+        function plotExistingMarkers() {
+            surveyData.forEach(addMarker);
+            if (surveyData.length > 0) updateMapBounds();
+        }
+
+        function updateMapBounds() {
+            if (surveyData.length === 0) return;
+            const points = surveyData.map(d => [d.lat, d.lon]);
+            const bounds = L.latLngBounds(points);
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+
+            if (surveyData.length === 0) {
+                list.innerHTML = '<li class="text-slate-400 text-sm italic py-2">No surveys yet...</li>';
+                return;
+            }
+
+            surveyData.slice().reverse().forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'p-3 bg-white rounded-lg border border-slate-100 flex justify-between items-center shadow-sm hover:border-indigo-200 transition-colors';
+                li.innerHTML = `
+                    <div>
+                        <div class="text-sm font-semibold">${item.place}</div>
+                        <div class="text-xs text-slate-500">${item.date} | ${item.price} THB</div>
+                    </div>
+                `;
+                li.onclick = () => map.setView([item.lat, item.lon], 12);
+                list.appendChild(li);
+            });
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(surveyData));
+        }
+    </script>
+</body>
+
+</html>

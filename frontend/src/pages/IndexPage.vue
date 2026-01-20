@@ -10,7 +10,35 @@
 
     <q-page-container>
       <q-page class="q-pa-md">
-        <div class="text-h4 q-mb-md">Full-Stack Demo</div>
+        <div class="row items-center justify-between q-mb-md">
+          <div class="text-h4">Full-Stack Demo</div>
+          <q-btn 
+            color="indigo-7" 
+            icon="open_in_new" 
+            label="Open Full Page Map" 
+            type="a" 
+            href="/longan_map.html" 
+            target="_blank"
+            class="text-weight-bold"
+          />
+        </div>
+
+        <!-- Embedded Map Section -->
+        <div class="q-mb-md">
+          <q-card bordered flat class="shadow-2">
+            <q-card-section class="bg-indigo-6 text-white row items-center">
+              <q-icon name="map" size="sm" class="q-mr-sm" />
+              <div class="text-h6">Live Survey Map</div>
+            </q-card-section>
+            <q-card-section class="q-pa-none">
+              <iframe 
+                src="/longan_map.html" 
+                style="width: 100%; height: 600px; border: none;"
+                title="Longan Survey Map"
+              ></iframe>
+            </q-card-section>
+          </q-card>
+        </div>
 
         <div v-if="loading" class="text-center">
           <q-spinner color="primary" size="3em" />

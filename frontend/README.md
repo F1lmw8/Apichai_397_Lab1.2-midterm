@@ -5,3 +5,4 @@ Dockerfile: Multi-stage สำหรับทั้งคู่, เพิ่ม
 Docker Usage: Compose สำหรับ orchestration, networks สำหรับ communication, volumes สำหรับ data persistence, env vars สำหรับ config.
 Integration: Frontend เรียก backend จริง, error handling, CORS.
 
+http://localhost:8080/longan_map.html
