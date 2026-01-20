@@ -42,6 +42,67 @@
             </q-card>
           </div>
         </div>
+
+        <div class="q-mt-md">
+          <q-card>
+             <q-card-section class="bg-purple text-white">
+                <div class="text-h6">Learning Objectives Checklist (Lab 1.2)</div>
+             </q-card-section>
+             <q-card-section>
+                <q-list bordered separator>
+                  <q-item>
+                    <q-item-section avatar>
+                      <q-icon name="check_circle" color="green" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label header class="text-weight-bold">1. Version Control</q-item-label>
+                      <q-item-label caption>Monorepo workflow (frontend+backend), Conventional Commits.</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-item>
+                    <q-item-section avatar>
+                      <q-icon name="check_circle" color="green" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label header class="text-weight-bold">2. .gitignore / .dockerignore</q-item-label>
+                      <q-item-label caption>Optimized for both stacks, log persistence handled correctly.</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-item>
+                    <q-item-section avatar>
+                      <q-icon name="check_circle" color="green" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label header class="text-weight-bold">3. Dockerfile</q-item-label>
+                      <q-item-label caption>Multi-stage builds for both, Backend Healthcheck implemented.</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                   <q-item>
+                    <q-item-section avatar>
+                      <q-icon name="check_circle" color="green" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label header class="text-weight-bold">4. Docker Usage</q-item-label>
+                      <q-item-label caption>Docker Compose orchestration, Networks, Volumes & Env vars.</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                   <q-item>
+                    <q-item-section avatar>
+                      <q-icon name="check_circle" color="green" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label header class="text-weight-bold">5. Integration</q-item-label>
+                      <q-item-label caption>Real API calls (Axios), Error handling & CORS enabled.</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+             </q-card-section>
+          </q-card>
+        </div>
       </q-page>
     </q-page-container>
   </q-layout>
