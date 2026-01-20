@@ -1,0 +1,43 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      # In the browser, the frontend calls the API. 
+      # localhost works if the user accesses it from their machine.
+      # If using server-side rendering or internal calls, we'd need internal DNS.
+      # For SPA, the browser makes the request, so 'http://localhost:3000' is correct
+      # IF the backend is exposed on port 3000 to the host.
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # If backend needs to talk to frontend, etc.
+    volumes:
+      - ./backend/logs:/app/logs
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/demo" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  app-network:
+    driver: bridge
