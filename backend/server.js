@@ -17,6 +17,14 @@ if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir);
 }
 
+// Endpoint /api/user
+app.get('/api/user', (req, res) => {
+  res.json({
+    name: "อภิไช โฉมทอง",
+    studentId: "6604101397"
+  });
+});
+
 // Endpoint /api/demo
 app.get('/api/demo', (req, res) => {
   const logMessage = `Request at ${new Date().toISOString()}: ${req.ip}\n`;
@@ -25,7 +33,7 @@ app.get('/api/demo', (req, res) => {
   } catch (err) {
     console.error('Error writing to log file:', err);
   }
-  
+
   res.json({
     git: {
       title: 'Advanced Git Workflow',
